@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jan Jeevika Sewa Sansthan — Impact Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+
+  :root{
+    --font-sans: 'Segoe UI', Arial, sans-serif;
+    --green-dark:#27500A;--green-mid:#3B6D11;--green-light:#639922;--green-pale:#EAF3DE;--green-soft:#C0DD97;
+    --amber-dark:#633806;--amber-mid:#854F0B;--amber-light:#BA7517;--amber-pale:#FAEEDA;--amber-soft:#FAC775;
+    --teal-dark:#085041;--teal-mid:#0F6E56;--teal-light:#1D9E75;--teal-pale:#E1F5EE;--teal-soft:#9FE1CB;
+    --brown:#7c5c3a;--cream:#fdf8f0;--warm-border:rgba(99,153,34,0.18);
+
+    /* light-mode semantic tokens */
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f6f8f3;
+    --color-background-tertiary: #eef2e8;
+    --color-text-primary: #1a2e0a;
+    --color-text-secondary: #5a6e47;
+    --color-border-tertiary: #c8d8b0;
+    --border-radius-lg: 12px;
+    --border-radius-md: 8px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1a2414;
+      --color-background-secondary: #222d18;
+      --color-background-tertiary: #151d0f;
+      --color-text-primary: #d8ecc0;
+      --color-text-secondary: #8aab6a;
+      --color-border-tertiary: #3a5228;
+      --warm-border: rgba(99,153,34,0.28);
+    }
+  }
+
+  body{font-family:var(--font-sans);background:var(--color-background-tertiary);color:var(--color-text-primary);min-height:100vh}
+
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+  /* ── Layout ── */
+  .dash{padding:1.5rem 1rem 2rem;background:var(--color-background-tertiary);max-width:1200px;margin:0 auto}
+
+  /* ── Header ── */
+  .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:12px}
+  .org-info{display:flex;align-items:center;gap:14px}
+  .org-logo{width:52px;height:52px;border-radius:50%;background:var(--green-pale);border:2px solid var(--green-soft);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+  .org-name{font-size:17px;font-weight:600;color:var(--color-text-primary)}
+  .org-sub{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+  .badge{font-size:11px;padding:4px 10px;border-radius:20px;background:var(--green-pale);color:var(--green-dark);border:0.5px solid var(--green-soft);font-weight:500}
+  .since{font-size:11px;color:var(--color-text-secondary)}
+
+  /* ── KPI Row ── */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.25rem}
+  .kpi{background:var(--color-background-primary);border:0.5px solid var(--warm-border);border-radius:var(--border-radius-lg);padding:1rem 1.1rem;position:relative;overflow:hidden}
+  .kpi-icon{font-size:18px;margin-bottom:6px}
+  .kpi-val{font-size:22px;font-weight:600;color:var(--color-text-primary);line-height:1}
+  .kpi-label{font-size:11px;color:var(--color-text-secondary);margin-top:4px}
+  .kpi-delta{font-size:11px;font-weight:500;margin-top:6px;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:10px}
+  .delta-up{background:var(--green-pale);color:var(--green-dark)}
+  .kpi-accent{position:absolute;top:0;right:0;width:4px;height:100%;border-radius:0 var(--border-radius-lg) var(--border-radius-lg) 0}
+
+  /* ── Grids ── */
+  .grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-bottom:12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+  .card{background:var(--color-background-primary);border:0.5px solid var(--warm-border);border-radius:var(--border-radius-lg);padding:1.1rem 1.2rem}
+  .card-title{font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:.8rem;display:flex;align-items:center;gap:6px}
+  .card-title i{color:var(--green-mid);font-size:15px}
+
+  /* ── Charts ── */
+  .chart-wrap{position:relative;width:100%}
+
+  /* ── Progress bars ── */
+  .prog-list{display:flex;flex-direction:column;gap:10px}
+  .prog-item{}
+  .prog-header{display:flex;justify-content:space-between;margin-bottom:4px}
+  .prog-name{font-size:12px;color:var(--color-text-primary)}
+  .prog-pct{font-size:12px;font-weight:500;color:var(--color-text-secondary)}
+  .prog-bar{height:7px;background:var(--color-background-secondary);border-radius:4px;overflow:hidden}
+  .prog-fill{height:100%;border-radius:4px;transition:width 1s ease}
+
+  /* ── Campaign tracker ── */
+  .camp-list{display:flex;flex-direction:column;gap:8px}
+  .camp-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--warm-border);background:var(--color-background-secondary)}
+  .camp-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .camp-name{font-size:12px;color:var(--color-text-primary);flex:1}
+  .camp-reach{font-size:11px;color:var(--color-text-secondary)}
+  .camp-status{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500}
+  .s-active{background:var(--green-pale);color:var(--green-dark)}
+  .s-done{background:var(--amber-pale);color:var(--amber-dark)}
+  .s-plan{background:var(--teal-pale);color:var(--teal-dark)}
+
+  /* ── Volunteer ── */
+  .vol-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
+  .vol-stat{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.7rem .9rem;border:0.5px solid var(--warm-border)}
+  .vol-num{font-size:18px;font-weight:600;color:var(--color-text-primary)}
+  .vol-lbl{font-size:11px;color:var(--color-text-secondary)}
+
+  /* ── Fund utilization ── */
+  .fund-rows{display:flex;flex-direction:column;gap:7px}
+  .fund-row{display:flex;align-items:center;gap:8px}
+  .fund-label{font-size:12px;color:var(--color-text-primary);width:110px;flex-shrink:0}
+  .fund-bar-wrap{flex:1;height:10px;background:var(--color-background-secondary);border-radius:5px;overflow:hidden}
+  .fund-fill{height:100%;border-radius:5px}
+  .fund-amt{font-size:11px;color:var(--color-text-secondary);width:52px;text-align:right;flex-shrink:0}
+
+  /* ── Reports ── */
+  .report-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .report-card{border:0.5px solid var(--warm-border);border-radius:var(--border-radius-md);padding:.75rem 1rem;background:var(--color-background-secondary);cursor:pointer;transition:border-color .2s}
+  .report-card:hover{border-color:var(--green-mid)}
+  .report-icon{font-size:20px;margin-bottom:5px}
+  .report-name{font-size:12px;font-weight:500;color:var(--color-text-primary)}
+  .report-date{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+  .report-dl{font-size:11px;color:var(--green-mid);margin-top:5px;display:flex;align-items:center;gap:3px}
+
+  /* ── Impact metrics ── */
+  .impact-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+  .impact-tile{background:var(--color-background-primary);border:0.5px solid var(--warm-border);border-radius:var(--border-radius-lg);padding:.9rem 1rem;text-align:center}
+  .impact-num{font-size:20px;font-weight:600;color:var(--color-text-primary)}
+  .impact-lbl{font-size:11px;color:var(--color-text-secondary);margin-top:3px}
+
+  /* ── Tags ── */
+  .tag-row{display:flex;flex-wrap:wrap;gap:6px}
+  .tag{font-size:11px;padding:3px 10px;border-radius:12px;border:0.5px solid var(--warm-border);background:var(--color-background-secondary);color:var(--color-text-secondary)}
+  .tag.active{background:var(--green-pale);color:var(--green-dark);border-color:var(--green-soft)}
+
+  /* ── Responsive ── */
+  @media(max-width:768px){
+    .kpi-row{grid-template-columns:1fr 1fr}
+    .grid2{grid-template-columns:1fr}
+    .grid3{grid-template-columns:1fr}
+    .impact-row{grid-template-columns:1fr 1fr 1fr}
+  }
+  @media(max-width:480px){
+    .kpi-row{grid-template-columns:1fr 1fr}
+    .report-grid{grid-template-columns:1fr}
+    .impact-row{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="dash">
+  <h2 class="sr-only">Jan Jeevika Sewa Sansthan NGO Impact Dashboard — community programs, volunteer, and fund data</h2>
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <div class="org-info">
+      <div class="org-logo"><i class="ti ti-leaf" aria-hidden="true" style="color:var(--green-mid);font-size:26px"></i></div>
+      <div>
+        <div class="org-name">Jan Jeevika Sewa Sansthan</div>
+        <div class="org-sub">Community Welfare &amp; Sustainability NGO · Raebareli, Uttar Pradesh</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="badge"><i class="ti ti-circle-check" aria-hidden="true"></i> Active NGO</span>
+      <span class="since">Est. 2023</span>
+    </div>
+  </div>
+
+  <!-- ── KPI Row ── -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-accent" style="background:var(--green-mid)"></div>
+      <div class="kpi-icon"><i class="ti ti-users" aria-hidden="true" style="color:var(--green-mid)"></i></div>
+      <div class="kpi-val">5,240+</div>
+      <div class="kpi-label">Beneficiaries reached</div>
+      <div class="kpi-delta delta-up"><i class="ti ti-arrow-up" aria-hidden="true"></i>+18% this quarter</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:var(--amber-light)"></div>
+      <div class="kpi-icon"><i class="ti ti-coin-rupee" aria-hidden="true" style="color:var(--amber-light)"></i></div>
+      <div class="kpi-val">₹5.4L</div>
+      <div class="kpi-label">Total budget managed</div>
+      <div class="kpi-delta delta-up"><i class="ti ti-arrow-up" aria-hidden="true"></i>92% utilized</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:var(--teal-mid)"></div>
+      <div class="kpi-icon"><i class="ti ti-heart-handshake" aria-hidden="true" style="color:var(--teal-mid)"></i></div>
+      <div class="kpi-val">78</div>
+      <div class="kpi-label">Active volunteers</div>
+      <div class="kpi-delta delta-up"><i class="ti ti-arrow-up" aria-hidden="true"></i>+45% engagement</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:var(--green-light)"></div>
+      <div class="kpi-icon"><i class="ti ti-calendar-event" aria-hidden="true" style="color:var(--green-light)"></i></div>
+      <div class="kpi-val">8</div>
+      <div class="kpi-label">Campaigns completed</div>
+      <div class="kpi-delta delta-up"><i class="ti ti-arrow-up" aria-hidden="true"></i>2 ongoing</div>
+    </div>
+  </div>
+
+  <!-- ── Row 1: Reach chart + Program targets ── -->
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-chart-line" aria-hidden="true"></i> Beneficiary reach — monthly trend</div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="reachChart" role="img" aria-label="Line chart showing monthly beneficiary reach growing from 180 in June 2023 to 820 in May 2026">Monthly reach data from June 2023 to May 2026.</canvas>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--color-text-secondary)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#3B6D11;border-radius:2px;display:inline-block"></span>Beneficiaries</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#BA7517;border-radius:2px;display:inline-block"></span>Target</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-target" aria-hidden="true"></i> Program reach targets</div>
+      <div class="prog-list">
+        <div class="prog-item">
+          <div class="prog-header"><span class="prog-name">Environmental Awareness</span><span class="prog-pct">94%</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:94%;background:var(--green-mid)"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="prog-header"><span class="prog-name">Health &amp; Sanitation</span><span class="prog-pct">78%</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:78%;background:var(--teal-mid)"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="prog-header"><span class="prog-name">Women Empowerment</span><span class="prog-pct">61%</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:61%;background:var(--amber-light)"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="prog-header"><span class="prog-name">Digital Literacy</span><span class="prog-pct">45%</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:45%;background:#1D9E75"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="prog-header"><span class="prog-name">Youth Skill Dev.</span><span class="prog-pct">38%</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:38%;background:#639922"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 2: Campaigns + Volunteers + Fund utilization ── -->
+  <div class="grid3">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-flag" aria-hidden="true"></i> Campaign tracker</div>
+      <div class="camp-list">
+        <div class="camp-row">
+          <div class="camp-dot" style="background:var(--green-mid)"></div>
+          <div class="camp-name">Tree Plantation Drive</div>
+          <div class="camp-reach">1,200</div>
+          <span class="camp-status s-active">Active</span>
+        </div>
+        <div class="camp-row">
+          <div class="camp-dot" style="background:var(--green-mid)"></div>
+          <div class="camp-name">Clean Village Campaign</div>
+          <div class="camp-reach">850</div>
+          <span class="camp-status s-active">Active</span>
+        </div>
+        <div class="camp-row">
+          <div class="camp-dot" style="background:var(--amber-light)"></div>
+          <div class="camp-name">Water Conservation</div>
+          <div class="camp-reach">640</div>
+          <span class="camp-status s-done">Done</span>
+        </div>
+        <div class="camp-row">
+          <div class="camp-dot" style="background:var(--amber-light)"></div>
+          <div class="camp-name">Health Awareness Camp</div>
+          <div class="camp-reach">920</div>
+          <span class="camp-status s-done">Done</span>
+        </div>
+        <div class="camp-row">
+          <div class="camp-dot" style="background:var(--teal-mid)"></div>
+          <div class="camp-name">Digital Literacy Drive</div>
+          <div class="camp-reach">—</div>
+          <span class="camp-status s-plan">Planned</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="ti ti-heart-handshake" aria-hidden="true"></i> Volunteer overview</div>
+      <div class="vol-stats">
+        <div class="vol-stat"><div class="vol-num">78</div><div class="vol-lbl">Total active</div></div>
+        <div class="vol-stat"><div class="vol-num">15+</div><div class="vol-lbl">Per campaign</div></div>
+        <div class="vol-stat"><div class="vol-num">4.2</div><div class="vol-lbl">Avg. hrs/week</div></div>
+        <div class="vol-stat"><div class="vol-num">6</div><div class="vol-lbl">Districts covered</div></div>
+      </div>
+      <div class="chart-wrap" style="height:110px">
+        <canvas id="volChart" role="img" aria-label="Donut chart of volunteer composition: students 45%, professionals 28%, community members 27%">Volunteers: 45% students, 28% professionals, 27% community members.</canvas>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:6px;font-size:11px;color:var(--color-text-secondary);justify-content:center;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:#3B6D11;display:inline-block"></span>Students 45%</span>
+        <span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:#BA7517;display:inline-block"></span>Professionals 28%</span>
+        <span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:#1D9E75;display:inline-block"></span>Community 27%</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="ti ti-coin-rupee" aria-hidden="true"></i> Fund utilization</div>
+      <div class="fund-rows">
+        <div class="fund-row">
+          <span class="fund-label">Field ops</span>
+          <div class="fund-bar-wrap"><div class="fund-fill" style="width:82%;background:var(--green-mid)"></div></div>
+          <span class="fund-amt">₹1.85L</span>
+        </div>
+        <div class="fund-row">
+          <span class="fund-label">Awareness</span>
+          <div class="fund-bar-wrap"><div class="fund-fill" style="width:68%;background:var(--teal-mid)"></div></div>
+          <span class="fund-amt">₹1.20L</span>
+        </div>
+        <div class="fund-row">
+          <span class="fund-label">Materials</span>
+          <div class="fund-bar-wrap"><div class="fund-fill" style="width:55%;background:var(--amber-light)"></div></div>
+          <span class="fund-amt">₹0.95L</span>
+        </div>
+        <div class="fund-row">
+          <span class="fund-label">Training</span>
+          <div class="fund-bar-wrap"><div class="fund-fill" style="width:42%;background:#639922"></div></div>
+          <span class="fund-amt">₹0.75L</span>
+        </div>
+        <div class="fund-row">
+          <span class="fund-label">Admin</span>
+          <div class="fund-bar-wrap"><div class="fund-fill" style="width:28%;background:var(--color-text-secondary)"></div></div>
+          <span class="fund-amt">₹0.25L</span>
+        </div>
+        <div class="fund-row">
+          <span class="fund-label">Reserve</span>
+          <div class="fund-bar-wrap"><div class="fund-fill" style="width:22%;background:var(--color-border-tertiary)"></div></div>
+          <span class="fund-amt">₹0.40L</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 3: Impact metrics + Reports ── -->
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-plant" aria-hidden="true"></i> Sustainability impact metrics</div>
+      <div class="impact-row">
+        <div class="impact-tile">
+          <div class="impact-num" style="color:var(--green-mid)">2,800+</div>
+          <div class="impact-lbl">Trees planted</div>
+        </div>
+        <div class="impact-tile">
+          <div class="impact-num" style="color:var(--teal-mid)">12</div>
+          <div class="impact-lbl">Villages covered</div>
+        </div>
+        <div class="impact-tile">
+          <div class="impact-num" style="color:var(--amber-mid)">30%</div>
+          <div class="impact-lbl">Efficiency gain</div>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:160px">
+        <canvas id="impactChart" role="img" aria-label="Bar chart comparing program efficiency in 2023, 2024, and 2025">Program efficiency improvement over three years.</canvas>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:6px;font-size:11px;color:var(--color-text-secondary)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#3B6D11;display:inline-block"></span>Env. programs</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#1D9E75;display:inline-block"></span>Health programs</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#BA7517;display:inline-block"></span>Social programs</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="ti ti-file-text" aria-hidden="true"></i> Impact reports</div>
+      <div class="report-grid">
+        <div class="report-card">
+          <div class="report-icon"><i class="ti ti-file-analytics" aria-hidden="true" style="color:var(--green-mid);font-size:20px"></i></div>
+          <div class="report-name">Annual Impact 2024–25</div>
+          <div class="report-date">Published May 2025</div>
+          <div class="report-dl"><i class="ti ti-download" aria-hidden="true"></i>Download PDF</div>
+        </div>
+        <div class="report-card">
+          <div class="report-icon"><i class="ti ti-chart-dots" aria-hidden="true" style="color:var(--teal-mid);font-size:20px"></i></div>
+          <div class="report-name">Q1 2026 Progress</div>
+          <div class="report-date">Published Apr 2026</div>
+          <div class="report-dl"><i class="ti ti-download" aria-hidden="true"></i>Download PDF</div>
+        </div>
+        <div class="report-card">
+          <div class="report-icon"><i class="ti ti-plant-2" aria-hidden="true" style="color:var(--green-light);font-size:20px"></i></div>
+          <div class="report-name">Sustainability Report</div>
+          <div class="report-date">Published Jan 2026</div>
+          <div class="report-dl"><i class="ti ti-download" aria-hidden="true"></i>Download PDF</div>
+        </div>
+        <div class="report-card">
+          <div class="report-icon"><i class="ti ti-users-group" aria-hidden="true" style="color:var(--amber-mid);font-size:20px"></i></div>
+          <div class="report-name">Volunteer Impact Study</div>
+          <div class="report-date">Published Mar 2026</div>
+          <div class="report-dl"><i class="ti ti-download" aria-hidden="true"></i>Download PDF</div>
+        </div>
+      </div>
+      <div style="margin-top:1rem">
+        <div class="card-title" style="margin-bottom:.6rem"><i class="ti ti-tags" aria-hidden="true"></i> Focus areas</div>
+        <div class="tag-row">
+          <span class="tag active">Environment</span>
+          <span class="tag active">Sustainability</span>
+          <span class="tag">Health</span>
+          <span class="tag">Women empowerment</span>
+          <span class="tag">Youth</span>
+          <span class="tag">Digital literacy</span>
+          <span class="tag">Rural outreach</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end .dash -->
+
+<script>
+  const months = ['Jun\'23','Sep\'23','Dec\'23','Mar\'24','Jun\'24','Sep\'24','Dec\'24','Mar\'25','Jun\'25','Sep\'25','Dec\'25','Mar\'26','May\'26'];
+  const reach  = [180,240,310,410,520,620,700,760,820,890,950,1020,820];
+  const target = [200,280,360,440,520,600,700,780,860,920,980,1040,1100];
+
+  new Chart(document.getElementById('reachChart'),{
+    type:'line',
+    data:{labels:months,datasets:[
+      {label:'Beneficiaries',data:reach,borderColor:'#3B6D11',backgroundColor:'rgba(59,109,17,0.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#3B6D11',tension:0.4,fill:true},
+      {label:'Target',data:target,borderColor:'#BA7517',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:0.4}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false}},scales:{x:{ticks:{font:{size:10},maxRotation:45,autoSkip:true},grid:{display:false}},y:{ticks:{font:{size:10},callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v},grid:{color:'rgba(0,0,0,0.05)'}}}}
+  });
+
+  new Chart(document.getElementById('volChart'),{
+    type:'doughnut',
+    data:{labels:['Students','Professionals','Community'],datasets:[{data:[45,28,27],backgroundColor:['#3B6D11','#BA7517','#1D9E75'],borderWidth:2,borderColor:'transparent'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+': '+c.parsed+'%'}}}}
+  });
+
+  new Chart(document.getElementById('impactChart'),{
+    type:'bar',
+    data:{
+      labels:['2023','2024','2025'],
+      datasets:[
+        {label:'Env. programs',data:[42,68,94],backgroundColor:'#3B6D11',borderRadius:4},
+        {label:'Health programs',data:[28,51,73],backgroundColor:'#1D9E75',borderRadius:4},
+        {label:'Social programs',data:[18,39,61],backgroundColor:'#BA7517',borderRadius:4}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10},callback:v=>v+'%'}}}}
+  });
+</script>
+</body>
+</html>
